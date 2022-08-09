@@ -64,8 +64,13 @@ namespace API.Controllers
                         using (var memoryStream = new MemoryStream())
                         {
                             await section.Body.CopyToAsync(memoryStream);
-                            await blobClient.UploadAsync(memoryStream);
-                        }                        
+                            bytes = memoryStream.ToArray();
+                        }
+                        
+                        using(var blobStream = new MemoryStream(bytes))
+                        {
+                            await blobClient.UploadAsync(blobStream);
+                        }
                     }
                 }
                 section = await reader.ReadNextSectionAsync();
