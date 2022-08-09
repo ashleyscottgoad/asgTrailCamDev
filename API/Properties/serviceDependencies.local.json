@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "secrets1": {
+      "secretStore": null,
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.KeyVault/vaults/asgTrailCamKeyVault",
+      "type": "secrets.keyVault",
+      "connectionId": "VaultUri"
+    },
+    "storage1": {
+      "secretStore": "AzureKeyVault",
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.Storage/storageAccounts/asgtrailcamstorage",
+      "type": "storage.azure",
+      "connectionId": "cnAsgTrailCamStorage",
+      "dynamicId": null
+    }
+  }
+}
