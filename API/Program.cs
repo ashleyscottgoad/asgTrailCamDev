@@ -12,9 +12,11 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+var storageConnectionString = builder.Configuration.GetValue<string>("TrailCamStorageConnectionString");
+
 builder.Services.AddAzureClients(clientBuilder =>
 {
-    clientBuilder.AddBlobServiceClient(Environment.GetEnvironmentVariable("TrailCamStorageConnectionString"), preferMsi: true);
+    clientBuilder.AddBlobServiceClient(storageConnectionString, preferMsi: true);
 });
 
 var app = builder.Build();
