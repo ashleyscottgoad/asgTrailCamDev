@@ -31,9 +31,11 @@ namespace API.Controllers
             var image = new RawImage() { Id = Guid.NewGuid(), Location = new Microsoft.Azure.Cosmos.Spatial.Point(-77.52, 37.33) { } };
             var bytes = JsonSerializer.SerializeToUtf8Bytes(image);
 
+            var blobClient = _rawImageContainerClient.GetBlobClient(image.Id.ToString());
+
             using (var stream = new MemoryStream(bytes))
             {
-                await _rawImageContainerClient.UploadBlobAsync(image.Id.ToString(), stream);
+                await blobClient.UploadAsync(stream);
             }
 
             return image;
