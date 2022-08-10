@@ -1,5 +1,6 @@
-﻿using Azure.Storage.Blobs;
-using System.Text.Json;
+﻿using API.Models;
+using Azure.Storage.Blobs;
+using Common.Cosmos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
@@ -11,20 +12,20 @@ namespace API.Controllers
     public class RawImageController : Controller
     {
         private BlobContainerClient _rawImageContainerClient;
+        private IRepository<RawImage> _rawImageRepository;
 
-        public RawImageController(BlobServiceClient blobServiceClient)
+        public RawImageController(BlobServiceClient blobServiceClient, IRepository<RawImage> rawImageRepository)
         {
             _rawImageContainerClient = blobServiceClient.GetBlobContainerClient("rawimage");
+            _rawImageRepository = rawImageRepository;
         }
 
         [HttpGet(Name = "GetRawImages")]
-        public IEnumerable<RawImage> Get()
+        public async Task<IEnumerable<RawImage>> Get()
         {
-            var list = new List<RawImage>();
-            list.Add(new RawImage() { Id = Guid.NewGuid(), Location = new Microsoft.Azure.Cosmos.Spatial.Point(-77.52, 37.33) { } });
-            return list;
+            return await _rawImageRepository.GetItemsAsync(x => x.id != null);
         }
-        
+
         [ActionName("Index")]
         [HttpPost]
         public async Task<string> Upload()
@@ -39,10 +40,18 @@ namespace API.Controllers
 
             var section = await reader.ReadNextSectionAsync();
 
-            string response = string.Empty;
-            await UploadFile(reader, section, guid);
-                
+            var cosmosTask = StoreCosmos(guid);
+            var uploadTask = UploadFile(reader, section, guid);
+            Task.WaitAll(new Task[] { uploadTask, cosmosTask });
+
             return guid.ToString();
+        }
+
+        private async Task<bool> StoreCosmos(Guid guid)
+        {
+            RawImage image = new RawImage() { id = guid.ToString() };
+            await _rawImageRepository.CreateItemAsync(image);
+            return true;
         }
 
         private async Task<bool> UploadFile(MultipartReader reader, MultipartSection? section, Guid id)
@@ -66,8 +75,8 @@ namespace API.Controllers
                             await section.Body.CopyToAsync(memoryStream);
                             bytes = memoryStream.ToArray();
                         }
-                        
-                        using(var blobStream = new MemoryStream(bytes))
+
+                        using (var blobStream = new MemoryStream(bytes))
                         {
                             await blobClient.UploadAsync(blobStream);
                         }
@@ -77,23 +86,5 @@ namespace API.Controllers
             }
             return true;
         }
-
-        /*
-        [HttpGet(Name = "GenerateTestImage")]
-        public async Task<RawImage> GenerateTestImage()
-        {
-            var image = new RawImage() { Id = Guid.NewGuid(), Location = new Microsoft.Azure.Cosmos.Spatial.Point(-77.52, 37.33) { } };
-            var bytes = JsonSerializer.SerializeToUtf8Bytes(image);
-
-            var blobClient = _rawImageContainerClient.GetBlobClient(image.Id.ToString());
-
-            using (var stream = new MemoryStream(bytes))
-            {
-                await blobClient.UploadAsync(stream);
-            }
-
-            return image;
-        }
-        */
     }
 }

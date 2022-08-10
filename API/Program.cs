@@ -1,5 +1,7 @@
-using Azure.Identity;
 using Microsoft.Extensions.Azure;
+using Common;
+using API.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
 //var keyVaultEndpoint = new Uri(Environment.GetEnvironmentVariable("VaultUri"));
@@ -13,20 +15,24 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var storageConnectionString = builder.Configuration.GetValue<string>("TrailCamStorageConnectionString");
+var cosmosConnectionString = builder.Configuration.GetValue<string>("TrailCamCosmosConnectionString");
+var cosmosDatabaseName = builder.Configuration.GetValue<string>("TrailCamCosmosDatabaseName");
 
 builder.Services.AddAzureClients(clientBuilder =>
 {
     clientBuilder.AddBlobServiceClient(storageConnectionString, preferMsi: true);
 });
 
+builder.Services.AddCosmosDB(cosmosConnectionString).AddSharedRepository<RawImage>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-//if (app.Environment.IsDevelopment())
-//{
+if (app.Environment.IsDevelopment())
+{
     app.UseSwagger();
     app.UseSwaggerUI();
-//}
+}
 
 app.UseHttpsRedirection();
 
