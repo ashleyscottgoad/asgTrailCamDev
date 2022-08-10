@@ -45,15 +45,28 @@ namespace API.Controllers
 
             var section = await reader.ReadNextSectionAsync();
 
-            var bytes = await BytesFromRequest(reader, section);
+            var multipartSectionBytes = await BytesFromRequest(reader, section);
 
-            var imageInfo = Image.Identify(bytes);
+            var fileSectionBytes = multipartSectionBytes.FirstOrDefault(x => x.SectionType == MultipartSectionType.File);
 
-            var hashedId = GetFileHash(imageInfo, bytes.Length);
+            var imageInfo = Image.Identify(fileSectionBytes.Bytes);
 
-            var uploadTask = UploadFile(bytes, hashedId);
+            var hashedId = GetFileHash(imageInfo, fileSectionBytes.Bytes.Length);
 
-            var cosmosTask = StoreCosmos(imageInfo, hashedId);
+            var uploadTask = UploadFile(fileSectionBytes.Bytes, hashedId);
+
+            var textSectionBytes = multipartSectionBytes.Where(x => x.SectionType == MultipartSectionType.Text).ToList();
+
+            Dictionary<string, string> metadata = new Dictionary<string, string>();
+
+            foreach(var tsb in textSectionBytes)
+            {
+                metadata.Add(tsb.Name, Encoding.UTF8.GetString(tsb.Bytes));
+            }
+
+            var rawImage = new RawImage(hashedId, metadata);
+
+            var cosmosTask = StoreCosmos(rawImage);
 
             Task.WaitAll(uploadTask, cosmosTask);
 
@@ -98,15 +111,16 @@ namespace API.Controllers
             return sBuilder.ToString();
         }
 
-        private async Task<bool> StoreCosmos(IImageInfo imageInfo, string id)
+        private async Task<bool> StoreCosmos(RawImage rawImage)
         {
-            RawImage image = new RawImage() { id = id };
-            await _rawImageRepository.CreateItemAsync(image);
+            await _rawImageRepository.CreateItemAsync(rawImage);
             return true;
         }
 
-        private async Task<byte[]> BytesFromRequest(MultipartReader reader, MultipartSection? section)
+        private async Task<IEnumerable<MultipartSectionBytes>> BytesFromRequest(MultipartReader reader, MultipartSection? section)
         {
+            List<MultipartSectionBytes> result = new List<MultipartSectionBytes>();
+
             while (section != null)
             {
                 var hasContentDispositionHeader = ContentDispositionHeaderValue.TryParse(
@@ -115,20 +129,24 @@ namespace API.Controllers
 
                 if (hasContentDispositionHeader)
                 {
-                    if (contentDisposition.DispositionType.Equals("form-data") &&
-                    (!string.IsNullOrEmpty(contentDisposition.FileName.Value) ||
-                    !string.IsNullOrEmpty(contentDisposition.FileNameStar.Value)))
+                    if (contentDisposition.DispositionType.Equals("form-data"))
                     {
+                        MultipartSectionType multipartSectionType = MultipartSectionType.Text;
+                        if (!string.IsNullOrEmpty(contentDisposition.FileName.Value) || !string.IsNullOrEmpty(contentDisposition.FileNameStar.Value))        
+                        {
+                            multipartSectionType = MultipartSectionType.File;
+                        }
+
                         using (var memoryStream = new MemoryStream())
                         {
                             await section.Body.CopyToAsync(memoryStream);
-                            return memoryStream.ToArray();
+                            result.Add(new MultipartSectionBytes() { SectionType = multipartSectionType, Bytes = memoryStream.ToArray(), Name = contentDisposition.Name.Value });
                         }
                     }
                 }
                 section = await reader.ReadNextSectionAsync();
             }
-            return null;
+            return result;
         }
 
         private async Task<bool> UploadFile(byte[] bytes, string hashedId)
