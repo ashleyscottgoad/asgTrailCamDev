@@ -51,10 +51,8 @@ namespace API.Controllers
 
                 var imageInfo = Image.Identify(fileSectionBytes.Bytes);
 
-                var hashedId = GetFileHash(imageInfo, fileSectionBytes.Bytes.Length);
-
-                var uploadTask = UploadFile(fileSectionBytes.Bytes, hashedId);
-
+                //var hashedId = GetFileHash(imageInfo, fileSectionBytes.Bytes.Length);
+                
                 var textSectionBytes = multipartSectionBytes.Where(x => x.SectionType == MultipartSectionType.Text).ToList();
 
                 Dictionary<string, string> metadata = new Dictionary<string, string>();
@@ -64,9 +62,10 @@ namespace API.Controllers
                     metadata.Add(tsb.Name, Encoding.UTF8.GetString(tsb.Bytes));
                 }
 
+                var hashedId = GetId(imageInfo, fileSectionBytes.Bytes.Length, metadata);
                 var rawImage = new RawImage(hashedId, metadata);
-
                 var cosmosTask = StoreCosmos(rawImage);
+                var uploadTask = UploadFile(fileSectionBytes.Bytes, hashedId);
 
                 Task.WaitAll(uploadTask, cosmosTask);
 
@@ -79,6 +78,25 @@ namespace API.Controllers
             
         }
 
+        private string GetId(IImageInfo imageInfo, int length, Dictionary<string, string> metadata)
+        {
+            var exifProfile = imageInfo.Metadata?.ExifProfile;
+            var sDateTimeOriginal = exifProfile.Values.FirstOrDefault(x => x.Tag == ExifTag.DateTimeOriginal);
+            DateTime dateTime = DateTime.MinValue;
+            if (sDateTimeOriginal != null)
+            {
+                bool success = DateTime.TryParseExact(sDateTimeOriginal.ToString(), "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateTime);
+            }
+            return metadata["filename"] + "_" + dateTime.ToString("yyyyMMddHHmmss") + "_" + length.ToString();
+        }
+
+        [ActionName("Delete")]
+        [HttpDelete]
+        public async Task<bool> Delete()
+        {
+            return await DeleteCosmos();
+        }
+
         private string GetFileHash(IImageInfo imageInfo, int length)
         {
             var exifProfile = imageInfo.Metadata?.ExifProfile;
@@ -88,7 +106,7 @@ namespace API.Controllers
             {
                 bool success = DateTime.TryParseExact(sDateTimeOriginal.ToString(), "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateTime);
             }
-            string source = dateTime.ToString() + length.ToString();
+            string source = dateTime.ToString("yyyyMMddHHmmss") + length.ToString();
 
             using(SHA256 sha = SHA256.Create())
             {
@@ -132,6 +150,17 @@ namespace API.Controllers
             return true;
         }
 
+        private async Task<bool> DeleteCosmos()
+        {
+            var existing = await _rawImageRepository.GetItemsAsync(x => x.id != null);
+            foreach(var i in existing)
+            {
+                await _rawImageRepository.DeleteItemAsync(i.id);
+            }
+
+            return true;
+        }
+
         private async Task<IEnumerable<MultipartSectionBytes>> BytesFromRequest(MultipartReader reader, MultipartSection? section)
         {
             List<MultipartSectionBytes> result = new List<MultipartSectionBytes>();
@@ -170,7 +199,7 @@ namespace API.Controllers
 
             using (var blobStream = new MemoryStream(bytes))
             {
-                var res = await blobClient.UploadAsync(blobStream);
+                var res = await blobClient.UploadAsync(blobStream, false);
                 return true;
             }
         }
