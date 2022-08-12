@@ -35,40 +35,48 @@ namespace API.Controllers
         [HttpPost]
         public async Task<string> Upload()
         {
-            var boundary = HeaderUtilities.RemoveQuotes(
+            try
+            {
+                var boundary = HeaderUtilities.RemoveQuotes(
              MediaTypeHeaderValue.Parse(Request.ContentType).Boundary
             ).Value;
 
-            var reader = new MultipartReader(boundary, Request.Body);
+                var reader = new MultipartReader(boundary, Request.Body);
 
-            var section = await reader.ReadNextSectionAsync();
+                var section = await reader.ReadNextSectionAsync();
 
-            var multipartSectionBytes = await BytesFromRequest(reader, section);
+                var multipartSectionBytes = await BytesFromRequest(reader, section);
 
-            var fileSectionBytes = multipartSectionBytes.FirstOrDefault(x => x.SectionType == MultipartSectionType.File);
+                var fileSectionBytes = multipartSectionBytes.FirstOrDefault(x => x.SectionType == MultipartSectionType.File);
 
-            var imageInfo = Image.Identify(fileSectionBytes.Bytes);
+                var imageInfo = Image.Identify(fileSectionBytes.Bytes);
 
-            var hashedId = GetFileHash(imageInfo, fileSectionBytes.Bytes.Length);
+                var hashedId = GetFileHash(imageInfo, fileSectionBytes.Bytes.Length);
 
-            var uploadTask = UploadFile(fileSectionBytes.Bytes, hashedId);
+                var uploadTask = UploadFile(fileSectionBytes.Bytes, hashedId);
 
-            var textSectionBytes = multipartSectionBytes.Where(x => x.SectionType == MultipartSectionType.Text).ToList();
+                var textSectionBytes = multipartSectionBytes.Where(x => x.SectionType == MultipartSectionType.Text).ToList();
 
-            Dictionary<string, string> metadata = new Dictionary<string, string>();
+                Dictionary<string, string> metadata = new Dictionary<string, string>();
 
-            foreach(var tsb in textSectionBytes)
-            {
-                metadata.Add(tsb.Name, Encoding.UTF8.GetString(tsb.Bytes));
+                foreach (var tsb in textSectionBytes)
+                {
+                    metadata.Add(tsb.Name, Encoding.UTF8.GetString(tsb.Bytes));
+                }
+
+                var rawImage = new RawImage(hashedId, metadata);
+
+                var cosmosTask = StoreCosmos(rawImage);
+
+                Task.WaitAll(uploadTask, cosmosTask);
+
+                return hashedId;
             }
-
-            var rawImage = new RawImage(hashedId, metadata);
-
-            var cosmosTask = StoreCosmos(rawImage);
-
-            Task.WaitAll(uploadTask, cosmosTask);
-
-            return hashedId;
+            catch (Exception ex)
+            {
+                return ex.StackTrace;
+            }
+            
         }
 
         private string GetFileHash(IImageInfo imageInfo, int length)
@@ -111,7 +119,16 @@ namespace API.Controllers
 
         private async Task<bool> StoreCosmos(RawImage rawImage)
         {
-            await _rawImageRepository.CreateItemAsync(rawImage);
+            var existingImage = await _rawImageRepository.GetItemAsync(rawImage.id);
+            if (existingImage != null)
+            {
+                await _rawImageRepository.UpdateItemAsync(rawImage.id, x => x.Metadata = rawImage.Metadata);
+            }
+            else
+            {
+                await _rawImageRepository.CreateItemAsync(rawImage);
+            }    
+            
             return true;
         }
 

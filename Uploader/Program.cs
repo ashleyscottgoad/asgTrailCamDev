@@ -8,7 +8,7 @@ class Program
 
         using var client = new HttpClient();
         string apiBaseAddress = "https://localhost:7015";
-        apiBaseAddress = "https://asgtrailcamdev.azurewebsites.net/";
+        //apiBaseAddress = "https://asgtrailcamdev.azurewebsites.net/";
         client.BaseAddress = new Uri(apiBaseAddress);
         var requestUri = "/RawImage";
         var files = Directory.GetFiles(@"D:\OneDrive - Clever Devices, Ltd\Pictures\trailcam\08072022\pictures");
@@ -19,6 +19,7 @@ class Program
         {
             Console.WriteLine($"file={f}");
             var f0 = Path.GetFileName(f);
+            var creationTime = File.GetCreationTime(f);
             var classification = f0.Split("_".ToCharArray())[0];
 
             using var content = new MultipartFormDataContent();
@@ -37,12 +38,14 @@ class Program
             content.Add(fileContent);
 
             content.Add(new StringContent(classification), "classification");
+            content.Add(new StringContent(f0), "filename");
+            content.Add(new StringContent(creationTime.ToString("yyyyMMddHHmmss")), "creationTime");
 
             var result = client.PostAsync(requestUri, content).Result;
-            Console.WriteLine($"result={result}");
-            qty++;
+            Console.WriteLine($"result={result}, qty={qty}");
+            qty++; 
 
-            if (qty > 2) return;
+            //if (qty > 2) return;
         }
     }
 }
