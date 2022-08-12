@@ -8,7 +8,7 @@ class Program
 
         using var client = new HttpClient();
         string apiBaseAddress = "https://localhost:7015";
-        //apiBaseAddress = "https://asgtrailcamdev.azurewebsites.net/";
+        apiBaseAddress = "https://asgtrailcamdev.azurewebsites.net/";
         client.BaseAddress = new Uri(apiBaseAddress);
         var requestUri = "/RawImage";
         var files = Directory.GetFiles(@"D:\OneDrive - Clever Devices, Ltd\Pictures\trailcam\08072022\pictures");
