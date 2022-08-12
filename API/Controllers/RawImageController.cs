@@ -35,8 +35,6 @@ namespace API.Controllers
         [HttpPost]
         public async Task<string> Upload()
         {
-            var guid = Guid.NewGuid();
-
             var boundary = HeaderUtilities.RemoveQuotes(
              MediaTypeHeaderValue.Parse(Request.ContentType).Boundary
             ).Value;
@@ -70,7 +68,7 @@ namespace API.Controllers
 
             Task.WaitAll(uploadTask, cosmosTask);
 
-            return guid.ToString();
+            return hashedId;
         }
 
         private string GetFileHash(IImageInfo imageInfo, int length)
