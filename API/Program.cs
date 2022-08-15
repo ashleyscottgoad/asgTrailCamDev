@@ -1,6 +1,6 @@
-using Microsoft.Extensions.Azure;
-using Common;
 using API.Models;
+using Common;
+using Microsoft.Extensions.Azure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,10 +17,12 @@ builder.Services.AddSwaggerGen();
 var storageConnectionString = builder.Configuration.GetValue<string>("TrailCamStorageConnectionString");
 var cosmosConnectionString = builder.Configuration.GetValue<string>("TrailCamCosmosConnectionString");
 var cosmosDatabaseName = builder.Configuration.GetValue<string>("TrailCamCosmosDatabaseName");
+var serviceBusConnectionString = builder.Configuration.GetValue<string>("TrailCamServiceBusConnectionString");
 
 builder.Services.AddAzureClients(clientBuilder =>
 {
     clientBuilder.AddBlobServiceClient(storageConnectionString, preferMsi: true);
+    clientBuilder.AddServiceBusClient(serviceBusConnectionString);
 });
 
 builder.Services.AddCosmosDB(cosmosConnectionString).AddSharedRepository<RawImage>();
