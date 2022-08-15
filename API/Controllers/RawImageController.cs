@@ -28,14 +28,6 @@ namespace API.Controllers
             _serviceBusSender = serviceBusClient.CreateSender("imagesuploaded");
         }
 
-        [HttpGet("TestServiceBus")]
-        public async Task<bool> TestServiceBus()
-        {
-            var message = new ServiceBusMessage($"testing123:{Guid.NewGuid().ToString("N")}");
-            await _serviceBusSender.SendMessageAsync(message);
-            return true;
-        }
-
         [HttpGet(Name = "GetRawImages")]
         public async Task<IEnumerable<RawImage>> Get()
         {
@@ -62,8 +54,6 @@ namespace API.Controllers
 
                 var imageInfo = Image.Identify(fileSectionBytes.Bytes);
 
-                //var hashedId = GetFileHash(imageInfo, fileSectionBytes.Bytes.Length);
-                
                 var textSectionBytes = multipartSectionBytes.Where(x => x.SectionType == MultipartSectionType.Text).ToList();
 
                 Dictionary<string, string> metadata = new Dictionary<string, string>();
@@ -80,13 +70,16 @@ namespace API.Controllers
 
                 Task.WaitAll(uploadTask, cosmosTask);
 
+                var message = new ServiceBusMessage(hashedId);
+                await _serviceBusSender.SendMessageAsync(message);
+
                 return hashedId;
             }
             catch (Exception ex)
             {
                 return ex.StackTrace;
             }
-            
+
         }
 
         private string GetId(IImageInfo imageInfo, int length, Dictionary<string, string> metadata)
@@ -113,13 +106,13 @@ namespace API.Controllers
             var exifProfile = imageInfo.Metadata?.ExifProfile;
             var sDateTimeOriginal = exifProfile.Values.FirstOrDefault(x => x.Tag == ExifTag.DateTimeOriginal);
             DateTime dateTime = DateTime.MinValue;
-            if(sDateTimeOriginal != null)
+            if (sDateTimeOriginal != null)
             {
                 bool success = DateTime.TryParseExact(sDateTimeOriginal.ToString(), "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateTime);
             }
             string source = dateTime.ToString("yyyyMMddHHmmss") + length.ToString();
 
-            using(SHA256 sha = SHA256.Create())
+            using (SHA256 sha = SHA256.Create())
             {
                 return GetHash(sha, source);
             }
@@ -156,15 +149,15 @@ namespace API.Controllers
             else
             {
                 await _rawImageRepository.CreateItemAsync(rawImage);
-            }    
-            
+            }
+
             return true;
         }
 
         private async Task<bool> DeleteCosmos()
         {
             var existing = await _rawImageRepository.GetItemsAsync(x => x.id != null);
-            foreach(var i in existing)
+            foreach (var i in existing)
             {
                 await _rawImageRepository.DeleteItemAsync(i.id);
             }
@@ -187,7 +180,7 @@ namespace API.Controllers
                     if (contentDisposition.DispositionType.Equals("form-data"))
                     {
                         MultipartSectionType multipartSectionType = MultipartSectionType.Text;
-                        if (!string.IsNullOrEmpty(contentDisposition.FileName.Value) || !string.IsNullOrEmpty(contentDisposition.FileNameStar.Value))        
+                        if (!string.IsNullOrEmpty(contentDisposition.FileName.Value) || !string.IsNullOrEmpty(contentDisposition.FileNameStar.Value))
                         {
                             multipartSectionType = MultipartSectionType.File;
                         }

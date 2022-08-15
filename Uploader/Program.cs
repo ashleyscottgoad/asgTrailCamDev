@@ -17,8 +17,8 @@ class Program
     HttpClient GetClient()
     {
         var client = new HttpClient();
-        
-        if(isProduction)
+
+        if (isProduction)
         {
             client.BaseAddress = new Uri(prodApiBaseAddress);
         }
@@ -26,7 +26,7 @@ class Program
         {
             client.BaseAddress = new Uri(devApiBaseAddress);
         }
-        
+
         return client;
     }
 

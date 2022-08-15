@@ -1,8 +1,5 @@
-using Azure.Messaging.ServiceBus;
 using ClassificationWorker;
 using Microsoft.Extensions.Azure;
-using Microsoft.Extensions.DependencyInjection;
-using System.Configuration;
 
 var builder = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)

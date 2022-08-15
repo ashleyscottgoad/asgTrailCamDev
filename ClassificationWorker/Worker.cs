@@ -16,7 +16,7 @@ namespace ClassificationWorker
         }
 
         private Task ServiceBusErrorHandler(ProcessErrorEventArgs arg)
-        {            
+        {
             _logger.LogError(arg.Exception.ToString());
             return Task.CompletedTask;
         }

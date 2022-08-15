@@ -1,6 +1,6 @@
-using Microsoft.Extensions.Azure;
-using Common;
 using API.Models;
+using Common;
+using Microsoft.Extensions.Azure;
 
 var builder = WebApplication.CreateBuilder(args);
 

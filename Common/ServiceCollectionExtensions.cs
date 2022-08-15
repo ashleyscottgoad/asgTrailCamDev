@@ -1,9 +1,9 @@
-﻿using Azure.Storage.Blobs;
-using Microsoft.Extensions.DependencyInjection;
-using Azure.Core.Extensions;
-using Microsoft.Extensions.Azure;
+﻿using Azure.Core.Extensions;
+using Azure.Storage.Blobs;
 using Common.Cosmos;
 using Microsoft.Azure.Cosmos;
+using Microsoft.Extensions.Azure;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Common
 {
