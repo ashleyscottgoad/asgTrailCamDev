@@ -1,4 +1,5 @@
 ﻿using API.Models;
+using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
 using Common.Cosmos;
 using Microsoft.AspNetCore.Mvc;
@@ -18,11 +19,21 @@ namespace API.Controllers
     {
         private BlobContainerClient _rawImageContainerClient;
         private IRepository<RawImage> _rawImageRepository;
+        private ServiceBusSender _serviceBusSender;
 
-        public RawImageController(BlobServiceClient blobServiceClient, IRepository<RawImage> rawImageRepository)
+        public RawImageController(BlobServiceClient blobServiceClient, IRepository<RawImage> rawImageRepository, ServiceBusClient serviceBusClient)
         {
             _rawImageContainerClient = blobServiceClient.GetBlobContainerClient("rawimage");
             _rawImageRepository = rawImageRepository;
+            _serviceBusSender = serviceBusClient.CreateSender("imagesuploaded");
+        }
+
+        [HttpGet("TestServiceBus")]
+        public async Task<bool> TestServiceBus()
+        {
+            var message = new ServiceBusMessage($"testing123:{Guid.NewGuid().ToString("N")}");
+            await _serviceBusSender.SendMessageAsync(message);
+            return true;
         }
 
         [HttpGet(Name = "GetRawImages")]
