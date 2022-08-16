@@ -2,6 +2,7 @@ using API.Models;
 using ClassificationWorker;
 using Common;
 using Microsoft.Extensions.Azure;
+using Microsoft.ML;
 
 var builder = new ConfigurationBuilder()
     .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
@@ -22,6 +23,7 @@ IHost host = Host.CreateDefaultBuilder(args)
             clientsBuilder.AddServiceBusClient(serviceBusConnectionString);
         });
         services.AddCosmosDB(cosmosConnectionString).AddSharedRepository<RawImage>();
+        services.AddSingleton<MLContext>();
     })
     .Build();
 
