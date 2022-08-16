@@ -2,7 +2,8 @@
 
 class Program
 {
-    string filePath = @"D:\OneDrive - Clever Devices, Ltd\Pictures\trailcam\08072022\pictures";
+    //string filePath = @"D:\OneDrive - Clever Devices, Ltd\Pictures\trailcam\08072022\pictures";
+    string filePath = @"D:\OneDrive - Clever Devices, Ltd\Pictures\trailcam\test";
     string devApiBaseAddress = "https://localhost:7015";
     string prodApiBaseAddress = "https://asgtrailcamdev.azurewebsites.net/";
     bool isProduction = true;
@@ -69,7 +70,7 @@ class Program
 
             content.Add(fileContent);
 
-            content.Add(new StringContent(classification), "classification");
+            //content.Add(new StringContent(classification), "classification");
             content.Add(new StringContent(f0), "filename");
             content.Add(new StringContent(creationTime.ToString("yyyyMMddHHmmss")), "creationTime");
 
