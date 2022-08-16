@@ -28,13 +28,13 @@ namespace API.Controllers
             _serviceBusSender = serviceBusClient.CreateSender("imagesuploaded");
         }
 
-        [HttpGet(Name = "GetRawImages")]
+        [HttpGet("GetRawImages")]
         public async Task<IEnumerable<RawImage>> Get()
         {
             return await _rawImageRepository.GetItemsAsync(x => x.id != null);
         }
 
-        [HttpGet(Name = "Requeue")]
+        [HttpGet("Requeue")]
         public async Task<string> Requeue(string hashedId)
         {
             var message = new ServiceBusMessage(hashedId);
