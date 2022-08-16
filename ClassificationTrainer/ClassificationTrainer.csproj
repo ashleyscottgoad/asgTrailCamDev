@@ -18,9 +18,5 @@
     <None Include="ClassificationModel.training.cs">
       <DependentUpon>ClassificationModel.mbconfig</DependentUpon>
     </None>
-    <None Include="ClassificationModel.zip">
-      <DependentUpon>ClassificationModel.mbconfig</DependentUpon>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 </Project>

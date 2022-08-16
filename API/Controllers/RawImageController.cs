@@ -34,6 +34,16 @@ namespace API.Controllers
             return await _rawImageRepository.GetItemsAsync(x => x.id != null);
         }
 
+        [HttpGet(Name = "Requeue")]
+        public async Task<string> Requeue(string hashedId)
+        {
+            var message = new ServiceBusMessage(hashedId);
+            await _serviceBusSender.SendMessageAsync(message);
+
+            return hashedId;
+        }
+
+
         [ActionName("Index")]
         [HttpPost]
         public async Task<string> Upload()

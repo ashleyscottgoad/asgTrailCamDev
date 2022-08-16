@@ -19,7 +19,7 @@ namespace ClassificationWorker
         private ITransformer _predictionPipeline;
         private PredictionEngine<ModelInput, ModelOutput> _predictionEngine;
 
-        public Worker(ILogger<Worker> logger, ServiceBusClient serviceBusClient, IRepository<RawImage> rawImageRepository, BlobServiceClient blobServiceClient)
+        public Worker(ILogger<Worker> logger, ServiceBusClient serviceBusClient, IRepository<RawImage> rawImageRepository, BlobServiceClient blobServiceClient, MLContext mlContext)
         {
             _rawImageContainerClient = blobServiceClient.GetBlobContainerClient("rawimage");
             _rawImageRepository = rawImageRepository;
@@ -27,6 +27,7 @@ namespace ClassificationWorker
             _serviceBusProcessor = serviceBusClient.CreateProcessor("imagesuploaded", "imagesuploaded_classificationservice");
             _serviceBusProcessor.ProcessMessageAsync += ServiceBusMessageHandler;
             _serviceBusProcessor.ProcessErrorAsync += ServiceBusErrorHandler;
+            _mlContext = mlContext;
             _classificationModelContainerClient = blobServiceClient.GetBlobContainerClient("classificationmodel");
             LoadClassificationModel();
         }
@@ -78,7 +79,7 @@ namespace ClassificationWorker
             await arg.CompleteMessageAsync(arg.Message);
         }
 
-        private async void LoadClassificationModel()
+        private void LoadClassificationModel()
         {
             var modelClient = _classificationModelContainerClient.GetBlobClient("ClassificationModel.zip");
 
