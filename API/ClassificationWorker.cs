@@ -3,14 +3,14 @@ using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
 using Common.Cosmos;
 using Microsoft.ML;
-using static API.Models.ClassificationModel;
+using static Common.Models.ClassificationModel;
 
 namespace API
 {
-    public class Worker : BackgroundService
+    public class ClassificationWorker : BackgroundService
     {
-        private readonly ILogger<Worker> _logger;
-        private ServiceBusProcessor _serviceBusProcessor;
+        private readonly ILogger<ClassificationWorker> _logger;
+        private ServiceBusProcessor _serviceBusClassificationProcessor;
         private IRepository<RawImage> _rawImageRepository;
         private BlobContainerClient _rawImageContainerClient;
         private BlobContainerClient _classificationModelContainerClient;
@@ -18,14 +18,19 @@ namespace API
         private DataViewSchema _predictionPipelineSchema;
         private ITransformer _predictionPipeline;
 
-        public Worker(ILogger<Worker> logger, ServiceBusClient serviceBusClient, IRepository<RawImage> rawImageRepository, BlobServiceClient blobServiceClient, MLContext mlContext)
+        public ClassificationWorker(
+            ILogger<ClassificationWorker> logger, 
+            ServiceBusClient serviceBusClient, 
+            IRepository<RawImage> rawImageRepository, 
+            BlobServiceClient blobServiceClient, 
+            MLContext mlContext)
         {
             _rawImageContainerClient = blobServiceClient.GetBlobContainerClient("rawimage");
             _rawImageRepository = rawImageRepository;
             _logger = logger;
-            _serviceBusProcessor = serviceBusClient.CreateProcessor("imagesuploaded", "imagesuploaded_classificationservice");
-            _serviceBusProcessor.ProcessMessageAsync += ServiceBusMessageHandler;
-            _serviceBusProcessor.ProcessErrorAsync += ServiceBusErrorHandler;
+            _serviceBusClassificationProcessor = serviceBusClient.CreateProcessor("imagesuploaded", "imagesuploaded_classificationservice");
+            _serviceBusClassificationProcessor.ProcessMessageAsync += ServiceBusClassificationMessageHandler;
+            _serviceBusClassificationProcessor.ProcessErrorAsync += ServiceBusClassificationErrorHandler;
             _classificationModelContainerClient = blobServiceClient.GetBlobContainerClient("classificationmodel");
             _mlContext = mlContext;
             LoadClassificationModel();
@@ -44,13 +49,13 @@ namespace API
             });
         }
 
-        private Task ServiceBusErrorHandler(ProcessErrorEventArgs arg)
+        private Task ServiceBusClassificationErrorHandler(ProcessErrorEventArgs arg)
         {
             _logger.LogError(arg.Exception.ToString());
             return Task.CompletedTask;
         }
 
-        private async Task ServiceBusMessageHandler(ProcessMessageEventArgs arg)
+        private async Task ServiceBusClassificationMessageHandler(ProcessMessageEventArgs arg)
         {
             string hashedId = arg.Message.Body.ToString();
             _logger.LogInformation($"Received: {hashedId} from subscription");
@@ -108,7 +113,7 @@ namespace API
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            await _serviceBusProcessor.StartProcessingAsync();
+            await _serviceBusClassificationProcessor.StartProcessingAsync();
 
             while (!stoppingToken.IsCancellationRequested)
             {

@@ -28,7 +28,7 @@ builder.Services.AddAzureClients(clientBuilder =>
 });
 
 builder.Services.AddSingleton<MLContext>();
-builder.Services.AddHostedService<Worker>();
+builder.Services.AddHostedService<ClassificationWorker>();
 builder.Services.AddCosmosDB(cosmosConnectionString).AddSharedRepository<RawImage>();
 
 var app = builder.Build();

@@ -1,7 +1,7 @@
 ﻿using Microsoft.ML;
 using Microsoft.ML.Data;
 
-namespace API.Models
+namespace Common.Models
 {
     public class ClassificationModel
     {
@@ -43,10 +43,6 @@ namespace API.Models
 
         #endregion
 
-        //private static string MLNetModelPath = Path.GetFullPath("ClassificationModel.zip");
-
-        //public static readonly Lazy<PredictionEngine<ModelInput, ModelOutput>> PredictEngine = new Lazy<PredictionEngine<ModelInput, ModelOutput>>(() => CreatePredictEngine(), true);
-
         private static PredictionEngine<ModelInput, ModelOutput> _predictEngine;
 
         /// <summary>
@@ -64,13 +60,6 @@ namespace API.Models
         {
             _predictEngine = predictEngine;
         }
-
-        //private static PredictionEngine<ModelInput, ModelOutput> CreatePredictEngine()
-        //{
-        //    var mlContext = new MLContext();
-        //    ITransformer mlModel = mlContext.Model.Load(MLNetModelPath, out var _);
-        //    return mlContext.Model.CreatePredictionEngine<ModelInput, ModelOutput>(mlModel);
-        //}
 
         /// <summary>
         /// Retrains model using the pipeline generated as part of the training process. For more information on how to load data, see aka.ms/loaddata.

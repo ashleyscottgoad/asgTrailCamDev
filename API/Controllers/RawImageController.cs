@@ -2,6 +2,7 @@
 using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
 using Common.Cosmos;
+using Common.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
