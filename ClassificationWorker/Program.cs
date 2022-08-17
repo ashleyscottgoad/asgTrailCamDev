@@ -5,7 +5,7 @@ using Microsoft.Extensions.Azure;
 using Microsoft.ML;
 
 var builder = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 
 IConfiguration config = builder.Build();
 
