@@ -11,12 +11,15 @@ namespace API
     {
         private readonly ILogger<ClassificationWorker> _logger;
         private ServiceBusProcessor _serviceBusClassificationProcessor;
+        private ServiceBusProcessor _serviceBusTrainerProcessor;
         private IRepository<RawImage> _rawImageRepository;
         private BlobContainerClient _rawImageContainerClient;
         private BlobContainerClient _classificationModelContainerClient;
         private MLContext _mlContext;
         private DataViewSchema _predictionPipelineSchema;
         private ITransformer _predictionPipeline;
+        private DateTime _lastTrained = DateTime.MinValue;
+        private TimeSpan _minTimeBetweenTrains = TimeSpan.FromDays(1.0);
 
         public ClassificationWorker(
             ILogger<ClassificationWorker> logger, 
@@ -31,6 +34,9 @@ namespace API
             _serviceBusClassificationProcessor = serviceBusClient.CreateProcessor("imagesuploaded", "imagesuploaded_classificationservice");
             _serviceBusClassificationProcessor.ProcessMessageAsync += ServiceBusClassificationMessageHandler;
             _serviceBusClassificationProcessor.ProcessErrorAsync += ServiceBusClassificationErrorHandler;
+            _serviceBusTrainerProcessor = serviceBusClient.CreateProcessor("classificationreviewed", "classificationworker");
+            _serviceBusTrainerProcessor.ProcessMessageAsync += ServiceBusTrainerMessageHandler;
+            _serviceBusTrainerProcessor.ProcessErrorAsync += ServiceBusTrainerErrorHandler;
             _classificationModelContainerClient = blobServiceClient.GetBlobContainerClient("classificationmodel");
             _mlContext = mlContext;
             LoadClassificationModel();
@@ -87,6 +93,27 @@ namespace API
 
             // complete the message. messages is deleted from the subscription. 
             await arg.CompleteMessageAsync(arg.Message);
+        }
+
+        private Task ServiceBusTrainerErrorHandler(ProcessErrorEventArgs arg)
+        {
+            _logger.LogError(arg.Exception.ToString());
+            return Task.CompletedTask;
+        }
+
+        private Task ServiceBusTrainerMessageHandler(ProcessMessageEventArgs arg)
+        {   
+            //get training data
+
+            //train model
+
+            //build pipeline
+
+            //evaluate model
+
+            //save model
+
+            return Task.CompletedTask;    
         }
 
         private void LoadClassificationModel()
